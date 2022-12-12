@@ -1,0 +1,68 @@
+# my global config
+global:
+  scrape_interval: 120s # By default, scrape targets every 15 seconds.
+  evaluation_interval: 120s # By default, scrape targets every 15 seconds.
+  # scrape_timeout is set to the global default (10s).
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    monitor: "my-project"
+
+# Load and evaluate rules in this file every 'evaluation_interval' seconds.
+rule_files:
+  # - "alert.rules"
+  # - "first.rules"
+  # - "second.rules"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100", "192.168.3.11:9100", "192.168.2.20:9100"]
+    # Override the global default and scrape targets from this job every 5 seconds.
+    scrape_interval: 120s
+
+  - job_name: "blackbox"
+    metrics_path: /probe
+    scheme: http
+    params:
+      module: [http_2xx]
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets.yml
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 192.168.1.60:9115 # The blackbox exporter's real hostname:port.
+
+    # static_configs:
+    #   - targets:
+    #       - "localhost:9090"
+    #       - "cadvisor:8080"
+    #       - "node-exporter:9100"
+    #       - "nginx-exporter:9113"
+
+  - job_name: cadvisor
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - 192.168.3.11:8080
+          - 192.168.2.20:28888
+
+  # static_configs:
+  # - targets: ['cadvisor:8080']
+
+  # metrics_path defaults to '/metrics'
+  # scheme defaults to 'http'.
+# copy OK
